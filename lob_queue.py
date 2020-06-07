@@ -32,10 +32,24 @@ lob = OrderBook() # Create a LOB object
 max_iterations = 100
 start_at = 10
 last_price = initial_price
+price_history = []
+bid_history = []
+ask_history = []
 bid, ask = initial_price - pip, initial_price
 mid = (bid + ask) / 2
 order_id = 0
 limit_orders = RBTree()
+total_traded = dict()
+
+def add_trades(total_traded, trades):
+    for trade in trades:
+        total_traded.setdefault(trade['price'], {'qty': 0, 'orders': 0})
+        total_traded[trade['price']]['qty'] += trade['qty']
+        total_traded[trade['price']]['orders'] += 1
+    return total_traded
+
+def get_last_price(last_price, trades):
+    return trades[len(trades) - 1]['price'] if len(trades) > 0 else last_price
 
 # Loop
 for t in range(max_iterations):
@@ -65,6 +79,8 @@ for t in range(max_iterations):
                 trades, order = lob.processOrder(order, False, False)
                 order['time_limit'] = t + np.random.exponential(1 / row['gamma'])
                 limit_orders.insert(order['idNum'], order)
+                total_traded = add_trades(total_traded, trades)
+                last_price = get_last_price(last_price, trades)
     
     
     # Market order arrivals
@@ -81,6 +97,8 @@ for t in range(max_iterations):
                 }
             if order['qty'] > 0:
                 trades, id_num = lob.processOrder(order, False, False)
+                total_traded = add_trades(total_traded, trades)
+                last_price = get_last_price(last_price, trades)
             
         mkt_sell = df[df['price'] == ask].to_dict(orient = 'records')[0]
         for i in range(int(np.random.poisson(mkt_sell['mu']))):
@@ -92,40 +110,61 @@ for t in range(max_iterations):
                 'tid' : order_id
                 }
             if order['qty'] > 0:
-                trades, id_num = lob.processOrder(order, False, False)    
+                trades, id_num = lob.processOrder(order, False, False)
+                total_traded = add_trades(total_traded, trades)
+                last_price = get_last_price(last_price, trades)
     
     # Next prices
             
     bid = lob.getBestBid() if str(lob.getBestBid()) != 'None' else bid
     ask = lob.getBestAsk() if str(lob.getBestAsk()) != 'None' else ask
-    # if str(bid) == 'None' or str(ask) == 'None':
-    #     raise Exception('Undefined ask or bid.')        
     mid = (bid + ask) / 2
     
-    x_bid, x_ask, y_bid, y_ask = [], [], [], []
-    for price in points:
-        if price < mid:
-            x_bid.append(price)
-            y_bid.append(lob.getVolumeAtPrice('bid', price))
-        elif price > mid:
-            x_ask.append(price)
-            y_ask.append(lob.getVolumeAtPrice('ask', price))
+    price_history.append(last_price)
+    bid_history.append(bid)
+    ask_history.append(ask)
+    
+    # Plot chart
+    
+    # x_bid, x_ask, y_bid, y_ask = [], [], [], []
+    # for price in points:
+    #     if price < mid:
+    #         x_bid.append(price)
+    #         y_bid.append(lob.getVolumeAtPrice('bid', price))
+    #     elif price > mid:
+    #         x_ask.append(price)
+    #         y_ask.append(lob.getVolumeAtPrice('ask', price))
         
-    traces = [
-        go.Bar(x = x_bid, y = y_bid, name = 'Bid', marker_color = 'blue'),
-        go.Bar(x = x_ask, y = y_ask, name = 'Ask', marker_color = 'red')
-        ]
-    layout = {
-        'title': 'Book de Ofertas',
-        'separators': '.',
-        'xaxis': dict(tickformat = '.2f', nticks = 10),
-        'yaxis': dict(gridcolor = 'grey'),
-        'margin': dict(l = 40, r = 40, b = 40, t = 60, pad = 20),
-        'plot_bgcolor': 'rgb(255, 255, 255)',
+    # traces = [
+    #     go.Bar(x = x_bid, y = y_bid, name = 'Bid', marker_color = 'blue'),
+    #     go.Bar(x = x_ask, y = y_ask, name = 'Ask', marker_color = 'red')
+    #     ]
+    # layout = {
+    #     'title': 'Book de Ofertas',
+    #     'separators': '.',
+    #     'xaxis': dict(tickformat = '.2f', nticks = 10),
+    #     'yaxis': dict(gridcolor = 'grey'),
+    #     'margin': dict(l = 40, r = 40, b = 40, t = 60, pad = 20),
+    #     'plot_bgcolor': 'rgb(255, 255, 255)',
         
-        }
-    fig = go.Figure(data = traces, layout = layout)
-    fig.show()
+    #     }
+    # fig = go.Figure(data = traces, layout = layout)
+    # fig.show()
     
 
-print(lob)
+# print(lob)
+    
+traces = [
+    go.Scatter(x = list(range(max_iterations)), y = price_history, name = 'Last', marker_color = 'green'),
+    go.Scatter(x = list(range(max_iterations)), y = bid_history, name = 'Bid', marker_color = 'blue'),
+    go.Scatter(x = list(range(max_iterations)), y = ask_history, name = 'Ask', marker_color = 'red')
+    ]
+layout = {
+    'title': 'Evolução do Preço',
+    'separators': '.',
+    'yaxis': dict(tickformat = '.2f', gridcolor = 'grey'),
+    'margin': dict(l = 40, r = 40, b = 40, t = 60, pad = 20),
+    'plot_bgcolor': 'rgb(255, 255, 255)',
+    }
+fig = go.Figure(data = traces, layout = layout)
+fig.show()

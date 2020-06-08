@@ -11,10 +11,11 @@ import time
 
 spread_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
 efficiency_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
-Numb_Sim = 5
+lifetime_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
+numb_sim = 200
 start_time = time.time()
 
-for s in range (0, Numb_Sim):
+for s in range (0, numb_sim):
 
     initial_price = 20.0
     pip = 0.01
@@ -63,6 +64,7 @@ for s in range (0, Numb_Sim):
     ask_history = []
     volume_history = []
     efficiency_history = []
+    lifetime_history = []
     book_bid_volume = []
     book_ask_volume = []
 
@@ -88,6 +90,7 @@ for s in range (0, Numb_Sim):
         
         for idNum, order in limit_orders.items():
             if t >= order['time_limit']:
+                lifetime_history.append(order['time_limit'])
                 lob.cancelOrder(order['side'], idNum)
                 limit_orders.remove(idNum)
 
@@ -160,6 +163,7 @@ for s in range (0, Numb_Sim):
                 order['time_limit'] = t + np.random.geometric(row['gamma'])
                 limit_orders.insert(order['idNum'], order)
             if trades:
+                lifetime_history.append(t)
                 total_trades+=1
             # total_traded = add_trades(total_traded, trades)
             # last_price = get_last_price(last_price, trades)
@@ -251,7 +255,7 @@ for s in range (0, Numb_Sim):
     # Idle_time
     efficiency = total_trades/total_orders
     print('Efficiency', efficiency)
-    print(s+1, 'of', Numb_Sim)
+    print(s+1, 'of', numb_sim)
 
     efficiency_result = efficiency_result.append({
                                                     'Simulation_ID': s+1,
@@ -259,6 +263,18 @@ for s in range (0, Numb_Sim):
                                                     'StdDev': 0, # efficiency_array.std()
                                                     'ConfInterval': 0, # st.t.interval(0.95, len(efficiency_array)-1, loc=np.mean(efficiency_array), scale=st.sem(efficiency_array))[1]-st.t.interval(0.95, len(efficiency_array)-1, loc=np.mean(efficiency_array), scale=st.sem(efficiency_array))[0]
                                                 }, ignore_index=True)
+
+    lifetime_array = np.array(lifetime_history)
+    print('Spread Mean', lifetime_array.mean())
+    print('Spread StdDev', lifetime_array.std())
+    print('Spread ConfInterval', st.t.interval(0.95, len(lifetime_array)-1, loc=np.mean(lifetime_array), scale=st.sem(lifetime_array)))
+
+    lifetime_result = lifetime_result.append({
+                                            'Simulation_ID': s+1,
+                                            'Mean': lifetime_array.mean(),
+                                            'StdDev': lifetime_array.std(),
+                                            'ConfInterval': st.t.interval(0.95, len(lifetime_array)-1, loc=np.mean(lifetime_array), scale=st.sem(lifetime_array))[1]-st.t.interval(0.95, len(lifetime_array)-1, loc=np.mean(lifetime_array), scale=st.sem(lifetime_array))[0]
+                                        }, ignore_index=True)
 
     # Book Evolution
     
@@ -302,7 +318,8 @@ for s in range (0, Numb_Sim):
 
 writer = pd.ExcelWriter('result.xlsx')
 spread_result.to_excel(writer,'spread', index=False)
-efficiency_result.to_excel(writer,'idle_time', index=False)
+efficiency_result.to_excel(writer,'efficiency', index=False)
+lifetime_result.to_excel(writer,'lifetime', index=False)
 writer.save()
 
 str_time = time.strftime('%H:%M:%S', time.gmtime(time.time() - start_time))

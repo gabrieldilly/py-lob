@@ -128,12 +128,7 @@ for s in range (0, numb_sim):
                         }
                     if order['qty'] > 0:
                         next_orders.append(order)
-        
-                born_and_dead_history = born_and_dead_history.append({
-                                                                'order_id': order_id,
-                                                                'born': t,
-                                                                'dead': ""
-                                                            }, ignore_index=True)
+
         # Market order arrivals
         
         if t >= start_at:
@@ -148,12 +143,6 @@ for s in range (0, numb_sim):
                     }
                 if order['qty'] > 0:
                     next_orders.append(order)
-
-                born_and_dead_history = born_and_dead_history.append({
-                                                'order_id': order_id,
-                                                'born': t,
-                                                'dead': ""
-                                            }, ignore_index=True)
                 
             mkt_sell = df[df['price'] == ask].to_dict(orient = 'records')[0]
             for i in range(int(np.random.poisson(mkt_sell['mu']))):
@@ -167,12 +156,6 @@ for s in range (0, numb_sim):
                 if order['qty'] > 0:
                     next_orders.append(order)
 
-                born_and_dead_history = born_and_dead_history.append({
-                                                'order_id': order_id,
-                                                'born': t,
-                                                'dead': ""
-                                            }, ignore_index=True)
-
         # Process orders
 
         random.shuffle(next_orders)
@@ -185,6 +168,11 @@ for s in range (0, numb_sim):
                 for index, row in born_and_dead_history.iterrows():
                     if row['order_id'] == order['idNum']:
                         row['dead'] = order['time_limit']
+                born_and_dead_history = born_and_dead_history.append({
+                                                                        'order_id': order['idNum'],
+                                                                        'born': t,
+                                                                        'dead': ""
+                                                                    }, ignore_index=True)
             if trades:
                 for trade in trades:
                     for index, row in born_and_dead_history.iterrows():

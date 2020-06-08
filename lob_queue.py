@@ -5,12 +5,14 @@ from orderbook import OrderBook
 from bintrees import RBTree
 import plotly.graph_objs as go
 import scipy.stats as st
+import time
 
 #%%
 
 spread_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
 efficiency_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
 Numb_Sim = 5
+start_time = time.time()
 
 for s in range (0, Numb_Sim):
 
@@ -153,15 +155,15 @@ for s in range (0, Numb_Sim):
         random.shuffle(next_orders)
         for order in next_orders:
             trades, order = lob.processOrder(order, False, False)
+            total_orders+=1
             if order:
                 order['time_limit'] = t + np.random.geometric(row['gamma'])
                 limit_orders.insert(order['idNum'], order)
-                total_orders+=1
             if trades:
                 total_trades+=1
-            total_traded = add_trades(total_traded, trades)
-            last_price = get_last_price(last_price, trades)
-            traded_volume += get_traded_volume(trades)    
+            # total_traded = add_trades(total_traded, trades)
+            # last_price = get_last_price(last_price, trades)
+            # traded_volume += get_traded_volume(trades)    
       
             # Next prices
                     
@@ -169,9 +171,9 @@ for s in range (0, Numb_Sim):
             ask = lob.getBestAsk() if str(lob.getBestAsk()) != 'None' else ask
             mid = (bid + ask) / 2
             
-            price_history.append(last_price)
             bid_history.append(bid)
             ask_history.append(ask)
+            # price_history.append(last_price)
             # volume_history.append(traded_volume)
         
             # x_bid, x_ask, y_bid, y_ask = [], [], [], []
@@ -207,9 +209,6 @@ for s in range (0, Numb_Sim):
         # print('Total Volume Bid', sum(y_bid))
         # print('Total Volume Ask', sum(y_ask))
         
-        efficiency = total_trades/total_orders
-        efficiency_history.append(efficiency)
-
     # print(lob)
 
     # Simulation Evolution
@@ -250,18 +249,15 @@ for s in range (0, Numb_Sim):
                                         }, ignore_index=True)
 
     # Idle_time
-    efficiency_array = np.array(efficiency_history)
-    print('Spread Mean', efficiency_array.mean())
-    print('Spread StdDev', efficiency_array.std())
-    print('Spread ConfInterval', st.t.interval(0.95, len(efficiency_array)-1, loc=np.mean(efficiency_array), scale=st.sem(efficiency_array)))
-
-    print(efficiency_history)
+    efficiency = total_trades/total_orders
+    print('Efficiency', efficiency)
+    print(s+1, 'of', Numb_Sim)
 
     efficiency_result = efficiency_result.append({
                                                     'Simulation_ID': s+1,
-                                                    'Mean': efficiency_array.mean(),
-                                                    'StdDev': efficiency_array.std(),
-                                                    'ConfInterval': st.t.interval(0.95, len(efficiency_array)-1, loc=np.mean(efficiency_array), scale=st.sem(efficiency_array))[1]-st.t.interval(0.95, len(efficiency_array)-1, loc=np.mean(efficiency_array), scale=st.sem(efficiency_array))[0]
+                                                    'Mean': efficiency,
+                                                    'StdDev': 0, # efficiency_array.std()
+                                                    'ConfInterval': 0, # st.t.interval(0.95, len(efficiency_array)-1, loc=np.mean(efficiency_array), scale=st.sem(efficiency_array))[1]-st.t.interval(0.95, len(efficiency_array)-1, loc=np.mean(efficiency_array), scale=st.sem(efficiency_array))[0]
                                                 }, ignore_index=True)
 
     # Book Evolution
@@ -308,3 +304,6 @@ writer = pd.ExcelWriter('result.xlsx')
 spread_result.to_excel(writer,'spread', index=False)
 efficiency_result.to_excel(writer,'idle_time', index=False)
 writer.save()
+
+str_time = time.strftime('%H:%M:%S', time.gmtime(time.time() - start_time))
+print(f"Finished. Elapsed time: {str_time}")

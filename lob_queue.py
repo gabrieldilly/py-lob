@@ -64,7 +64,7 @@ for s in range (0, numb_sim):
     ask_history = []
     volume_history = []
     efficiency_history = []
-    born_and_death_history = pd.DataFrame(columns = ['order_id','born', 'death'])
+    born_and_dead_history = pd.DataFrame(columns = ['order_id','born', 'dead'])
     lifetime_history = []
     book_bid_volume = []
     book_ask_volume = []
@@ -91,9 +91,9 @@ for s in range (0, numb_sim):
         
         for idNum, order in limit_orders.items():
             if t >= order['time_limit']:
-                for index, row in born_and_death_history.iterrows():
+                for index, row in born_and_dead_history.iterrows():
                     if row['order_id'] == idNum:
-                        lifetime_history.append(int(row['death'])-int(row['born']))
+                        lifetime_history.append(int(row['dead'])-int(row['born']))
                 lob.cancelOrder(order['side'], idNum)
                 limit_orders.remove(idNum)
 
@@ -129,10 +129,10 @@ for s in range (0, numb_sim):
                     if order['qty'] > 0:
                         next_orders.append(order)
         
-                born_and_death_history = born_and_death_history.append({
+                born_and_dead_history = born_and_dead_history.append({
                                                                 'order_id': order_id,
                                                                 'born': t,
-                                                                'death': ""
+                                                                'dead': ""
                                                             }, ignore_index=True)
         # Market order arrivals
         
@@ -149,10 +149,10 @@ for s in range (0, numb_sim):
                 if order['qty'] > 0:
                     next_orders.append(order)
 
-                born_and_death_history = born_and_death_history.append({
+                born_and_dead_history = born_and_dead_history.append({
                                                 'order_id': order_id,
                                                 'born': t,
-                                                'death': ""
+                                                'dead': ""
                                             }, ignore_index=True)
                 
             mkt_sell = df[df['price'] == ask].to_dict(orient = 'records')[0]
@@ -167,10 +167,10 @@ for s in range (0, numb_sim):
                 if order['qty'] > 0:
                     next_orders.append(order)
 
-                born_and_death_history = born_and_death_history.append({
+                born_and_dead_history = born_and_dead_history.append({
                                                 'order_id': order_id,
                                                 'born': t,
-                                                'death': ""
+                                                'dead': ""
                                             }, ignore_index=True)
 
         # Process orders
@@ -182,13 +182,14 @@ for s in range (0, numb_sim):
             if order:
                 order['time_limit'] = t + np.random.geometric(df[df['price'] == order['price']]['gamma'])
                 limit_orders.insert(order['idNum'], order)
-                for index, row in born_and_death_history.iterrows():
+                for index, row in born_and_dead_history.iterrows():
                     if row['order_id'] == order['idNum']:
-                        row['death'] = order['time_limit']
+                        row['dead'] = order['time_limit']
             if trades:
-                for index, row in born_and_death_history.iterrows():
-                    if row['order_id'] == order['idNum']:
-                        lifetime_history.append(t-int(row['born']))
+                for trade in trades:
+                    for index, row in born_and_dead_history.iterrows():
+                        if row['order_id'] == trade['tid']:
+                            lifetime_history.append(t-int(row['born']))
                 total_trades+=1
             # total_traded = add_trades(total_traded, trades)
             # last_price = get_last_price(last_price, trades)

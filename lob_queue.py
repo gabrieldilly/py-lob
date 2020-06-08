@@ -165,19 +165,17 @@ for s in range (0, numb_sim):
             if order:
                 order['time_limit'] = t + np.random.geometric(df[df['price'] == order['price']]['gamma'])
                 limit_orders.insert(order['idNum'], order)
-                for index, row in born_and_dead_history.iterrows():
-                    if row['order_id'] == order['idNum']:
-                        row['dead'] = order['time_limit']
                 born_and_dead_history = born_and_dead_history.append({
                                                                         'order_id': order['idNum'],
                                                                         'born': t,
-                                                                        'dead': ""
+                                                                        'dead': order['time_limit']
                                                                     }, ignore_index=True)
             if trades:
                 for trade in trades:
-                    for index, row in born_and_dead_history.iterrows():
-                        if row['order_id'] == trade['tid']:
-                            lifetime_history.append(t-int(row['born']))
+                    if 'tid' in trade.keys():  
+                        for index, row in born_and_dead_history.iterrows():
+                            if row['order_id'] == trade['tid']:
+                                lifetime_history.append(t-int(row['born']))
                 total_trades+=1
             # total_traded = add_trades(total_traded, trades)
             # last_price = get_last_price(last_price, trades)

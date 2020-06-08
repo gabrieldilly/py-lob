@@ -37,7 +37,7 @@ df['gamma'] = 0.1
 
 #%%
 lob = OrderBook() # Create a LOB object
-max_iterations = 480
+max_iterations = 200
 start_at = 20
 last_price = initial_price
 
@@ -54,7 +54,7 @@ volume_history = []
 book_bid_volume = []
 book_ask_volume = []
 
-
+# Functions
 def add_trades(total_traded, trades):
     for trade in trades:
         total_traded.setdefault(trade['price'], {'qty': 0, 'orders': 0})
@@ -73,15 +73,13 @@ for t in range(max_iterations):
     traded_volume = 0
     next_orders = []
     
-    # Limit order cancellations
-    
+    # Limit order cancellations    
     for idNum, order in limit_orders.items():
         if t >= order['time_limit']:
             lob.cancelOrder(order['side'], idNum)
             limit_orders.remove(idNum)
 
-    # Limit order arrivals
-    
+    # Limit order arrivals    
     df['orders'] = df['lambda'].apply(lambda x: np.random.poisson(x))
     for idx, row in df.iterrows():
         for i in range(int(row['orders'])):
@@ -112,8 +110,7 @@ for t in range(max_iterations):
                 if order['qty'] > 0:
                     next_orders.append(order)
     
-    # Market order arrivals
-      
+    # Market order arrivals      
     if t >= start_at:
         mkt_buy = df[df['price'] == bid].to_dict(orient = 'records')[0]
         for i in range(int(np.random.poisson(mkt_buy['mu']))):
@@ -140,7 +137,6 @@ for t in range(max_iterations):
                 next_orders.append(order)
 
     # Process orders
-
     random.shuffle(next_orders)
     for order in next_orders:
         trades, order = lob.processOrder(order, False, False)
@@ -151,8 +147,7 @@ for t in range(max_iterations):
         last_price = get_last_price(last_price, trades)
         traded_volume += get_traded_volume(trades)        
         
-        # Next prices
-                
+        # Next prices                
         bid = lob.getBestBid() if str(lob.getBestBid()) != 'None' else bid
         ask = lob.getBestAsk() if str(lob.getBestAsk()) != 'None' else ask
         mid = (bid + ask) / 2
@@ -197,8 +192,7 @@ for t in range(max_iterations):
     
 # print(lob)
 
-# Simulation Evolution
-    
+# Simulation Evolution    
 traces = [
     go.Scatter(x = list(range(len(price_history))), y = price_history, name = 'Last', marker_color = 'green'),
     go.Scatter(x = list(range(len(price_history))), y = bid_history, name = 'Bid', marker_color = 'blue'),
@@ -225,8 +219,7 @@ fig.show()
 print('Spread Mean', (np.array(ask_history) - np.array(bid_history)).mean())
 print('Spread StdDev', (np.array(ask_history) - np.array(bid_history)).std())
 
-# Book Evolution
-    
+# Book Evolution    
 traces = [
     go.Scatter(x = list(range(len(price_history))), y = np.array(book_bid_volume) + np.array(book_ask_volume), name = 'Total', marker_color = 'green'),
     go.Scatter(x = list(range(len(price_history))), y = book_bid_volume, name = 'Bid', marker_color = 'blue'),
@@ -246,7 +239,6 @@ fig.show()
 print('Book Volume', (np.array(book_bid_volume) + np.array(book_ask_volume)).mean())
 
 # Volume at Price
-
 volumes = pd.DataFrame(total_traded).T
 traces = [
     go.Bar(x = volumes['qty'], y = volumes.index, name = 'Volume', marker_color = 'green', orientation = 'h')

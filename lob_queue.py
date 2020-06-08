@@ -9,8 +9,8 @@ import scipy.stats as st
 #%%
 
 spread_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
-idle_time_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
-Numb_Sim = 100
+efficiency_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
+Numb_Sim = 5
 
 for s in range (0, Numb_Sim):
 
@@ -53,15 +53,16 @@ for s in range (0, Numb_Sim):
     order_id = 0
     limit_orders = RBTree()
     total_traded = dict()
-    time = 0
-
+    total_trades = 0
+    total_orders = 0
+    
     price_history = []
     bid_history = []
     ask_history = []
     volume_history = []
+    efficiency_history = []
     book_bid_volume = []
     book_ask_volume = []
-    idle_time_history = []
 
     def add_trades(total_traded, trades):
         for trade in trades:
@@ -155,14 +156,12 @@ for s in range (0, Numb_Sim):
             if order:
                 order['time_limit'] = t + np.random.geometric(row['gamma'])
                 limit_orders.insert(order['idNum'], order)
+                total_orders+=1
             if trades:
-                idle_time_history.insert(len(idle_time_history), time)
-                time = 0
-            else:
-                time+=1
+                total_trades+=1
             total_traded = add_trades(total_traded, trades)
             last_price = get_last_price(last_price, trades)
-            traded_volume += get_traded_volume(trades)      
+            traded_volume += get_traded_volume(trades)    
       
             # Next prices
                     
@@ -208,6 +207,9 @@ for s in range (0, Numb_Sim):
         # print('Total Volume Bid', sum(y_bid))
         # print('Total Volume Ask', sum(y_ask))
         
+        efficiency = total_trades/total_orders
+        efficiency_history.append(efficiency)
+
     # print(lob)
 
     # Simulation Evolution
@@ -248,18 +250,18 @@ for s in range (0, Numb_Sim):
                                         }, ignore_index=True)
 
     # Idle_time
-    idle_time_array = np.array(idle_time_history)
-    print('Spread Mean', idle_time_array.mean())
-    print('Spread StdDev', idle_time_array.std())
-    print('Spread ConfInterval', st.t.interval(0.95, len(idle_time_array)-1, loc=np.mean(idle_time_array), scale=st.sem(idle_time_array)))
+    efficiency_array = np.array(efficiency_history)
+    print('Spread Mean', efficiency_array.mean())
+    print('Spread StdDev', efficiency_array.std())
+    print('Spread ConfInterval', st.t.interval(0.95, len(efficiency_array)-1, loc=np.mean(efficiency_array), scale=st.sem(efficiency_array)))
 
-    print(idle_time_history)
+    print(efficiency_history)
 
-    idle_time_result = idle_time_result.append({
+    efficiency_result = efficiency_result.append({
                                                     'Simulation_ID': s+1,
-                                                    'Mean': idle_time_array.mean(),
-                                                    'StdDev': idle_time_array.std(),
-                                                    'ConfInterval': st.t.interval(0.95, len(idle_time_array)-1, loc=np.mean(idle_time_array), scale=st.sem(idle_time_array))[1]-st.t.interval(0.95, len(idle_time_array)-1, loc=np.mean(idle_time_array), scale=st.sem(idle_time_array))[0]
+                                                    'Mean': efficiency_array.mean(),
+                                                    'StdDev': efficiency_array.std(),
+                                                    'ConfInterval': st.t.interval(0.95, len(efficiency_array)-1, loc=np.mean(efficiency_array), scale=st.sem(efficiency_array))[1]-st.t.interval(0.95, len(efficiency_array)-1, loc=np.mean(efficiency_array), scale=st.sem(efficiency_array))[0]
                                                 }, ignore_index=True)
 
     # Book Evolution
@@ -304,5 +306,5 @@ for s in range (0, Numb_Sim):
 
 writer = pd.ExcelWriter('result.xlsx')
 spread_result.to_excel(writer,'spread', index=False)
-idle_time_result.to_excel(writer,'idle_time', index=False)
+efficiency_result.to_excel(writer,'idle_time', index=False)
 writer.save()

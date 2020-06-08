@@ -12,7 +12,7 @@ import time
 spread_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
 efficiency_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
 lifetime_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
-numb_sim = 200
+numb_sim = 10
 start_time = time.time()
 
 for s in range (0, numb_sim):
@@ -64,6 +64,7 @@ for s in range (0, numb_sim):
     ask_history = []
     volume_history = []
     efficiency_history = []
+    born_and_death_history = pd.DataFrame(columns = ['order_id','born', 'death'])
     lifetime_history = []
     book_bid_volume = []
     book_ask_volume = []
@@ -90,7 +91,9 @@ for s in range (0, numb_sim):
         
         for idNum, order in limit_orders.items():
             if t >= order['time_limit']:
-                lifetime_history.append(order['time_limit'])
+                for index, row in born_and_death_history.iterrows():
+                    if row['order_id'] == idNum:
+                        lifetime_history.append(int(row['death'])-int(row['born']))
                 lob.cancelOrder(order['side'], idNum)
                 limit_orders.remove(idNum)
 
@@ -126,6 +129,11 @@ for s in range (0, numb_sim):
                     if order['qty'] > 0:
                         next_orders.append(order)
         
+                born_and_death_history = born_and_death_history.append({
+                                                                'order_id': order_id,
+                                                                'born': t,
+                                                                'death': ""
+                                                            }, ignore_index=True)
         # Market order arrivals
         
         if t >= start_at:
@@ -140,6 +148,12 @@ for s in range (0, numb_sim):
                     }
                 if order['qty'] > 0:
                     next_orders.append(order)
+
+                born_and_death_history = born_and_death_history.append({
+                                                'order_id': order_id,
+                                                'born': t,
+                                                'death': ""
+                                            }, ignore_index=True)
                 
             mkt_sell = df[df['price'] == ask].to_dict(orient = 'records')[0]
             for i in range(int(np.random.poisson(mkt_sell['mu']))):
@@ -153,6 +167,12 @@ for s in range (0, numb_sim):
                 if order['qty'] > 0:
                     next_orders.append(order)
 
+                born_and_death_history = born_and_death_history.append({
+                                                'order_id': order_id,
+                                                'born': t,
+                                                'death': ""
+                                            }, ignore_index=True)
+
         # Process orders
 
         random.shuffle(next_orders)
@@ -160,10 +180,15 @@ for s in range (0, numb_sim):
             trades, order = lob.processOrder(order, False, False)
             total_orders+=1
             if order:
-                order['time_limit'] = t + np.random.geometric(row['gamma'])
+                order['time_limit'] = t + np.random.geometric(df[df['price'] == order['price']]['gamma'])
                 limit_orders.insert(order['idNum'], order)
+                for index, row in born_and_death_history.iterrows():
+                    if row['order_id'] == order['idNum']:
+                        row['death'] = order['time_limit']
             if trades:
-                lifetime_history.append(t)
+                for index, row in born_and_death_history.iterrows():
+                    if row['order_id'] == order['idNum']:
+                        lifetime_history.append(t-int(row['born']))
                 total_trades+=1
             # total_traded = add_trades(total_traded, trades)
             # last_price = get_last_price(last_price, trades)

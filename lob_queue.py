@@ -222,8 +222,8 @@ fig = go.Figure(data = traces, layout = layout)
 fig.show()
 
 # Spread
-print((np.array(ask_history) - np.array(bid_history)).mean())
-print((np.array(ask_history) - np.array(bid_history)).std())
+print('Spread Mean', (np.array(ask_history) - np.array(bid_history)).mean())
+print('Spread StdDev', (np.array(ask_history) - np.array(bid_history)).std())
 
 # Book Evolution
     
@@ -243,7 +243,7 @@ fig = go.Figure(data = traces, layout = layout)
 fig.show()
 
 # Book Volume
-print((np.array(book_bid_volume) + np.array(book_ask_volume)).mean())
+print('Book Volume', (np.array(book_bid_volume) + np.array(book_ask_volume)).mean())
 
 # Volume at Price
 
@@ -263,4 +263,4 @@ fig = go.Figure(data = traces, layout = layout)
 fig.show()
 
 # Traded Volume
-print(sum(volumes['qty']))
+print('Traded Volume', sum(volumes['qty']))

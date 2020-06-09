@@ -34,14 +34,6 @@ for s in range (0, numb_sim):
     df['volume'] = 5
     df['gamma'] = 0.1
 
-    # df = pd.read_csv('petr4_min.csv')
-    # initial_price = 21.39
-    # points = np.array(df['price'])
-    # df['mu'] = 0.5 + df['mu'] / 5
-    # df['volume'] = 5 #df['volume'].mean() / 480
-    # df['lambda'] = 0.1 + df['mu'] / 10
-    # df['gamma'] = 0.15
-
     lob = OrderBook() # Create a LOB object
     last_price = initial_price
 
@@ -188,8 +180,8 @@ for s in range (0, numb_sim):
     efficiency_result = efficiency_result.append({
                                                     'Simulation_ID': s+1,
                                                     'Mean': efficiency,
-                                                    'StdDev': 0, # efficiency_array.std()
-                                                    'ConfInterval': 0, # st.t.interval(0.95, len(efficiency_array)-1, loc=np.mean(efficiency_array), scale=st.sem(efficiency_array))[1]-st.t.interval(0.95, len(efficiency_array)-1, loc=np.mean(efficiency_array), scale=st.sem(efficiency_array))[0]
+                                                    'StdDev': 0,
+                                                    'ConfInterval': 0,
                                                 }, ignore_index=True)
 
     # Lifetime

@@ -12,7 +12,7 @@ import time
 spread_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
 efficiency_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
 lifetime_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
-numb_sim = 10
+numb_sim = 1
 start_time = time.time()
 
 for s in range (0, numb_sim):
@@ -45,7 +45,6 @@ for s in range (0, numb_sim):
     # df['lambda'] = 0.1 + df['mu'] / 10
     # df['gamma'] = 0.15
 
-    #%%
     lob = OrderBook() # Create a LOB object
     max_iterations = 200
     start_at = 20
@@ -64,8 +63,8 @@ for s in range (0, numb_sim):
     ask_history = []
     volume_history = []
     efficiency_history = []
-    born_and_dead_history = pd.DataFrame(columns = ['order_id','born', 'dead'])
-    lifetime_history = []
+    born_and_dead_history = dict()
+    # lifetime_history = []
     book_bid_volume = []
     book_ask_volume = []
 
@@ -88,17 +87,14 @@ for s in range (0, numb_sim):
         next_orders = []
         
         # Limit order cancellations
-        
         for idNum, order in limit_orders.items():
             if t >= order['time_limit']:
-                for index, row in born_and_dead_history.iterrows():
-                    if row['order_id'] == idNum:
-                        lifetime_history.append(int(row['dead'])-int(row['born']))
+                # lifetime_history.append(order['time_limit'] - born_and_dead_history[idNum]['born'])
+                # born_and_dead_history[idNum]['dead'] = order['time_limit']
                 lob.cancelOrder(order['side'], idNum)
                 limit_orders.remove(idNum)
 
         # Limit order arrivals
-        
         df['orders'] = df['lambda'].apply(lambda x: np.random.poisson(x))
         for idx, row in df.iterrows():
             for i in range(int(row['orders'])):
@@ -130,7 +126,6 @@ for s in range (0, numb_sim):
                         next_orders.append(order)
 
         # Market order arrivals
-        
         if t >= start_at:
             mkt_buy = df[df['price'] == bid].to_dict(orient = 'records')[0]
             for i in range(int(np.random.poisson(mkt_buy['mu']))):
@@ -157,32 +152,34 @@ for s in range (0, numb_sim):
                     next_orders.append(order)
 
         # Process orders
-
         random.shuffle(next_orders)
         for order in next_orders:
             trades, order = lob.processOrder(order, False, False)
-            total_orders+=1
+            total_orders += 1
+
             if order:
-                order['time_limit'] = t + np.random.geometric(df[df['price'] == order['price']]['gamma'])
-                limit_orders.insert(order['idNum'], order)
-                born_and_dead_history = born_and_dead_history.append({
-                                                                        'order_id': order['idNum'],
-                                                                        'born': t,
-                                                                        'dead': order['time_limit']
-                                                                    }, ignore_index=True)
+                # order was created or not fully executed
+                idNum = order['idNum']
+                order['time_limit'] = t + np.random.geometric(float(df[df['price'] == order['price']]['gamma']))
+                limit_orders.insert(idNum, order)
+                born_and_dead_history[idNum] = {
+                                                    'idNum': idNum,
+                                                    'born': t,
+                                                    'dead': order['time_limit']
+                                                }
+
             if trades:
                 for trade in trades:
-                    if 'tid' in trade.keys():  
-                        for index, row in born_and_dead_history.iterrows():
-                            if row['order_id'] == trade['tid']:
-                                lifetime_history.append(t-int(row['born']))
-                total_trades+=1
+                    # trade['party1'] = [tid, side, idNum]
+                    idNum = trade['party1'][2]
+                    # lifetime_history.append(t - born_and_dead_history[idNum]['born'])
+                    born_and_dead_history[idNum]['dead'] = t
+                total_trades += 1
             # total_traded = add_trades(total_traded, trades)
             # last_price = get_last_price(last_price, trades)
             # traded_volume += get_traded_volume(trades)    
       
             # Next prices
-                    
             bid = lob.getBestBid() if str(lob.getBestBid()) != 'None' else bid
             ask = lob.getBestAsk() if str(lob.getBestAsk()) != 'None' else ask
             mid = (bid + ask) / 2
@@ -204,7 +201,6 @@ for s in range (0, numb_sim):
             # book_ask_volume.append(sum(y_ask))
             
         # Plot chart
-
         # traces = [
         #     go.Bar(x = x_bid, y = y_bid, name = 'Bid', marker_color = 'blue'),
         #     go.Bar(x = x_ask, y = y_ask, name = 'Ask', marker_color = 'red')
@@ -216,7 +212,6 @@ for s in range (0, numb_sim):
         #     'yaxis': dict(gridcolor = 'grey'),
         #     'margin': dict(l = 40, r = 40, b = 40, t = 60, pad = 20),
         #     'plot_bgcolor': 'rgb(255, 255, 255)',
-            
         #     }
         # fig = go.Figure(data = traces, layout = layout)
         # fig.show()
@@ -228,7 +223,6 @@ for s in range (0, numb_sim):
     # print(lob)
 
     # Simulation Evolution
-        
     # traces = [
     #     go.Scatter(x = list(range(len(price_history))), y = price_history, name = 'Last', marker_color = 'green'),
     #     go.Scatter(x = list(range(len(price_history))), y = bid_history, name = 'Bid', marker_color = 'blue'),
@@ -264,10 +258,9 @@ for s in range (0, numb_sim):
                                             'ConfInterval': st.t.interval(0.95, len(spread_array)-1, loc=np.mean(spread_array), scale=st.sem(spread_array))[1]-st.t.interval(0.95, len(spread_array)-1, loc=np.mean(spread_array), scale=st.sem(spread_array))[0]
                                         }, ignore_index=True)
 
-    # Idle_time
+    # Efficiency
     efficiency = total_trades/total_orders
     print('Efficiency', efficiency)
-    print(s+1, 'of', numb_sim)
 
     efficiency_result = efficiency_result.append({
                                                     'Simulation_ID': s+1,
@@ -276,10 +269,14 @@ for s in range (0, numb_sim):
                                                     'ConfInterval': 0, # st.t.interval(0.95, len(efficiency_array)-1, loc=np.mean(efficiency_array), scale=st.sem(efficiency_array))[1]-st.t.interval(0.95, len(efficiency_array)-1, loc=np.mean(efficiency_array), scale=st.sem(efficiency_array))[0]
                                                 }, ignore_index=True)
 
-    lifetime_array = np.array(lifetime_history)
-    print('Spread Mean', lifetime_array.mean())
-    print('Spread StdDev', lifetime_array.std())
-    print('Spread ConfInterval', st.t.interval(0.95, len(lifetime_array)-1, loc=np.mean(lifetime_array), scale=st.sem(lifetime_array)))
+    # Lifetime
+    bd = pd.DataFrame.from_dict(born_and_dead_history, orient='index')
+    bd['lifetime'] = bd['dead'] - bd['born']
+    # bd.to_excel('born_and_dead_history_' + str(s) + '.xlsx')
+    lifetime_array = np.array(bd['lifetime'])
+    print('Lifetime Mean', lifetime_array.mean())
+    print('Lifetime StdDev', lifetime_array.std())
+    print('Lifetime ConfInterval', st.t.interval(0.95, len(lifetime_array)-1, loc=np.mean(lifetime_array), scale=st.sem(lifetime_array)))
 
     lifetime_result = lifetime_result.append({
                                             'Simulation_ID': s+1,
@@ -289,7 +286,6 @@ for s in range (0, numb_sim):
                                         }, ignore_index=True)
 
     # Book Evolution
-    
     # traces = [
     #     go.Scatter(x = list(range(len(price_history))), y = np.array(book_bid_volume) + np.array(book_ask_volume), name = 'Total', marker_color = 'green'),
     #     go.Scatter(x = list(range(len(price_history))), y = book_bid_volume, name = 'Bid', marker_color = 'blue'),
@@ -305,11 +301,10 @@ for s in range (0, numb_sim):
     # fig = go.Figure(data = traces, layout = layout)
     # fig.show()
 
-    # # Book Volume
+    # Book Volume
     # print('Book Volume', (np.array(book_bid_volume) + np.array(book_ask_volume)).mean())
 
     # Volume at Price
-
     # volumes = pd.DataFrame(total_traded).T
     # traces = [
     #     go.Bar(x = volumes['qty'], y = volumes.index, name = 'Volume', marker_color = 'green', orientation = 'h')
@@ -325,8 +320,9 @@ for s in range (0, numb_sim):
     # fig = go.Figure(data = traces, layout = layout)
     # fig.show()
 
-    # # Traded Volume
+    # Traded Volume
     # print('Traded Volume', sum(volumes['qty']))
+    print(s+1, 'of', numb_sim)
 
 writer = pd.ExcelWriter('result.xlsx')
 spread_result.to_excel(writer,'spread', index=False)

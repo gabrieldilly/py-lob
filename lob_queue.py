@@ -12,7 +12,7 @@ import time
 spread_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
 efficiency_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
 lifetime_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
-numb_sim = 1
+numb_sim = 100
 start_time = time.time()
 
 for s in range (0, numb_sim):
@@ -247,9 +247,9 @@ for s in range (0, numb_sim):
 
     # Spread
     spread_array = np.array(ask_history) - np.array(bid_history)
-    print('Spread Mean', spread_array.mean())
-    print('Spread StdDev', spread_array.std())
-    print('Spread ConfInterval', st.t.interval(0.95, len(spread_array)-1, loc=np.mean(spread_array), scale=st.sem(spread_array)))
+    # print('Spread Mean', spread_array.mean())
+    # print('Spread StdDev', spread_array.std())
+    # print('Spread ConfInterval', st.t.interval(0.95, len(spread_array)-1, loc=np.mean(spread_array), scale=st.sem(spread_array)))
 
     spread_result = spread_result.append({
                                             'Simulation_ID': s+1,
@@ -260,7 +260,7 @@ for s in range (0, numb_sim):
 
     # Efficiency
     efficiency = total_trades/total_orders
-    print('Efficiency', efficiency)
+    # print('Efficiency', efficiency)
 
     efficiency_result = efficiency_result.append({
                                                     'Simulation_ID': s+1,
@@ -274,9 +274,9 @@ for s in range (0, numb_sim):
     bd['lifetime'] = bd['dead'] - bd['born']
     # bd.to_excel('born_and_dead_history_' + str(s) + '.xlsx')
     lifetime_array = np.array(bd['lifetime'])
-    print('Lifetime Mean', lifetime_array.mean())
-    print('Lifetime StdDev', lifetime_array.std())
-    print('Lifetime ConfInterval', st.t.interval(0.95, len(lifetime_array)-1, loc=np.mean(lifetime_array), scale=st.sem(lifetime_array)))
+    # print('Lifetime Mean', lifetime_array.mean())
+    # print('Lifetime StdDev', lifetime_array.std())
+    # print('Lifetime ConfInterval', st.t.interval(0.95, len(lifetime_array)-1, loc=np.mean(lifetime_array), scale=st.sem(lifetime_array)))
 
     lifetime_result = lifetime_result.append({
                                             'Simulation_ID': s+1,

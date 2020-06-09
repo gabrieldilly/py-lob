@@ -8,18 +8,21 @@ import scipy.stats as st
 import time
 
 #%%
+start_time = time.time()
+
 spread_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
 efficiency_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
 lifetime_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
-numb_sim = 100
-start_time = time.time()
+
+numb_sim = 1
+max_iterations = 200
+start_at = 20
+initial_price = 20.0
+pip = 0.01
+interval_range = 40
+lot_size = 100
 
 for s in range (0, numb_sim):
-
-    initial_price = 20.0
-    pip = 0.01
-    interval_range = 40
-    lot_size = 100
 
     points = np.array(range(int(initial_price / pip - interval_range), 
                             int(initial_price / pip + interval_range))) / int(1 / pip) # + 1
@@ -40,8 +43,6 @@ for s in range (0, numb_sim):
     # df['gamma'] = 0.15
 
     lob = OrderBook() # Create a LOB object
-    max_iterations = 200
-    start_at = 20
     last_price = initial_price
 
     bid, ask = initial_price - pip, initial_price

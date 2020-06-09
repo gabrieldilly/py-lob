@@ -10,9 +10,9 @@ import time
 #%%
 start_time = time.time()
 
-spread_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
-efficiency_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
-lifetime_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean','StdDev','ConfInterval'])
+spread_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean', 'StdDev', 'ConfInterval'])
+efficiency_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean', 'StdDev', 'ConfInterval'])
+lifetime_result = pd.DataFrame(columns = ['Simulation_ID', 'Mean', 'StdDev', 'ConfInterval'])
 
 numb_sim = 1
 max_iterations = 200

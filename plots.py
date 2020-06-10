@@ -32,7 +32,7 @@ for s in range (0, numb_sim):
     df['gamma'] = 0.1
 
     lob = OrderBook() # Create a LOB object
-    max_iterations = 200
+    max_iterations = 100
     start_at = 20
     last_price = initial_price
 
@@ -177,39 +177,41 @@ for s in range (0, numb_sim):
             price_history.append(last_price)
             volume_history.append(traded_volume)
         
-        x_bid, x_ask, y_bid, y_ask = [], [], [], []
-        for price in points:
-            if price < mid:
-                x_bid.append(price)
-                y_bid.append(lob.getVolumeAtPrice('bid', price))
-            elif price > mid:
-                x_ask.append(price)
-                y_ask.append(lob.getVolumeAtPrice('ask', price))
-        book_bid_volume.append(sum(y_bid))
-        book_ask_volume.append(sum(y_ask))
-        
-        # if t >= start_at:
-        # if total_orders > 2000:
-        if True:
-            # Plot chart
-            traces = [
-                go.Bar(x = x_bid, y = y_bid, name = 'Bid', marker_color = 'blue'),
-                go.Bar(x = x_ask, y = y_ask, name = 'Ask', marker_color = 'red'),
-                # go.Bar(x = x_traded, y = y_traded, name = 'Traded', marker_color = 'green'),
-                ]
-            layout = {
-                'title': 'Book de Ofertas',
-                'separators': '.',
-                'barmode': 'stack',
-                'xaxis': dict(tickformat = '.2f', nticks = 10),
-                'yaxis': dict(gridcolor = 'grey', range = [0, 5000]),
-                'margin': dict(l = 40, r = 40, b = 40, t = 60, pad = 20),
-                'plot_bgcolor': 'rgb(255, 255, 255)',
-                'bargap': 0.1
-                }
-            fig = go.Figure(data = traces, layout = layout)
-            fig.write_image('images/fig' + str(t) + '.png', width = 1920, height = 1080)
-            print(t)
+            x_bid, x_ask, y_bid, y_ask = [], [], [], []
+            for price in points:
+                if price < mid:
+                    x_bid.append(price)
+                    y_bid.append(lob.getVolumeAtPrice('bid', price))
+                elif price > mid:
+                    x_ask.append(price)
+                    y_ask.append(lob.getVolumeAtPrice('ask', price))
+            book_bid_volume.append(sum(y_bid))
+            book_ask_volume.append(sum(y_ask))
+            
+            if t >= start_at:
+            # if total_orders > 2000:
+            # if True:
+                # Plot chart
+                traces = [
+                    go.Bar(x = x_bid, y = y_bid, name = 'Bid', marker_color = 'blue'),
+                    go.Bar(x = x_ask, y = y_ask, name = 'Ask', marker_color = 'red'),
+                    go.Bar(x = x_traded, y = y_traded, name = 'Traded', marker_color = 'green'),
+                    ]
+                layout = {
+                    'title': 'Book de Ofertas',
+                    'separators': '.',
+                    'barmode': 'stack',
+                    'xaxis': dict(tickformat = '.2f', nticks = 10),
+                    'yaxis': dict(gridcolor = 'grey', range = [0, 5000]),
+                    'margin': dict(l = 40, r = 40, b = 40, t = 60, pad = 20),
+                    'plot_bgcolor': 'rgb(255, 255, 255)',
+                    'bargap': 0.1
+                    }
+                fig = go.Figure(data = traces, layout = layout)
+                fig.write_image('images/fig' + str(total_orders) + '.png', width = 1280, height = 720)
+                # fig.write_image('images/fig' + str(t) + '.png', width = 1280, height = 720)
+                print(total_orders)
+                # print(t)
                  # fig.show()
         
         # print('Time', t)

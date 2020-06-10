@@ -110,25 +110,25 @@ for s in range (0, numb_sim):
 
         # Market order arrivals
         if t >= start_at:
-            mkt_buy = df[df['price'] == bid].to_dict(orient = 'records')[0]
-            for i in range(int(np.random.poisson(mkt_buy['mu']))):
+            volume = df[df['price'] == bid]['volume'].sum()
+            for i in range(int(np.random.poisson(volume))):
                 order_id = order_id + 1
                 order = {
                     'type' : 'market', 
                     'side' : 'bid', 
-                    'qty' : np.random.poisson(mkt_buy['volume']) * lot_size, 
+                    'qty' : np.random.poisson(volume) * lot_size, 
                     'tid' : order_id
                     }
                 if order['qty'] > 0:
                     next_orders.append(order)
                 
-            mkt_sell = df[df['price'] == ask].to_dict(orient = 'records')[0]
-            for i in range(int(np.random.poisson(mkt_sell['mu']))):
+            volume = df[df['price'] == ask]['volume'].sum()
+            for i in range(int(np.random.poisson(volume))):
                 order_id = order_id + 1
                 order = {
                     'type' : 'market', 
                     'side' : 'ask', 
-                    'qty' : np.random.poisson(mkt_sell['volume']) * lot_size, 
+                    'qty' : np.random.poisson(volume) * lot_size, 
                     'tid' : order_id
                     }
                 if order['qty'] > 0:
@@ -137,6 +137,11 @@ for s in range (0, numb_sim):
         # Process orders
         random.shuffle(next_orders)
         for order in next_orders:
+            x_traded = [initial_price]
+            y_traded = [0]
+            order_side = order['side'] if order['type'] == 'market' else ''
+            # market_order = order['side'] if order['type'] == 'market' else ''
+            
             trades, order = lob.processOrder(order, False, False)
             total_orders += 1
 
@@ -155,6 +160,8 @@ for s in range (0, numb_sim):
                 for trade in trades:
                     idNum = trade['party1'][2] # trade['party1'] = [tid, side, idNum]
                     born_and_dead_history[idNum]['dead'] = t
+                    x_traded.append(trade['price'])
+                    y_traded.append(trade['qty'])
                 total_trades += 1
             total_traded = add_trades(total_traded, trades)
             last_price = get_last_price(last_price, trades)
@@ -170,32 +177,40 @@ for s in range (0, numb_sim):
             price_history.append(last_price)
             volume_history.append(traded_volume)
         
-            x_bid, x_ask, y_bid, y_ask = [], [], [], []
-            for price in points:
-                if price < mid:
-                    x_bid.append(price)
-                    y_bid.append(lob.getVolumeAtPrice('bid', price))
-                elif price > mid:
-                    x_ask.append(price)
-                    y_ask.append(lob.getVolumeAtPrice('ask', price))
-            book_bid_volume.append(sum(y_bid))
-            book_ask_volume.append(sum(y_ask))
-            
-        # Plot chart
-        # traces = [
-        #     go.Bar(x = x_bid, y = y_bid, name = 'Bid', marker_color = 'blue'),
-        #     go.Bar(x = x_ask, y = y_ask, name = 'Ask', marker_color = 'red')
-        #     ]
-        # layout = {
-        #     'title': 'Book de Ofertas',
-        #     'separators': '.',
-        #     'xaxis': dict(tickformat = '.2f', nticks = 10),
-        #     'yaxis': dict(gridcolor = 'grey'),
-        #     'margin': dict(l = 40, r = 40, b = 40, t = 60, pad = 20),
-        #     'plot_bgcolor': 'rgb(255, 255, 255)',
-        #     }
-        # fig = go.Figure(data = traces, layout = layout)
-        # fig.show()
+        x_bid, x_ask, y_bid, y_ask = [], [], [], []
+        for price in points:
+            if price < mid:
+                x_bid.append(price)
+                y_bid.append(lob.getVolumeAtPrice('bid', price))
+            elif price > mid:
+                x_ask.append(price)
+                y_ask.append(lob.getVolumeAtPrice('ask', price))
+        book_bid_volume.append(sum(y_bid))
+        book_ask_volume.append(sum(y_ask))
+        
+        # if t >= start_at:
+        # if total_orders > 2000:
+        if True:
+            # Plot chart
+            traces = [
+                go.Bar(x = x_bid, y = y_bid, name = 'Bid', marker_color = 'blue'),
+                go.Bar(x = x_ask, y = y_ask, name = 'Ask', marker_color = 'red'),
+                # go.Bar(x = x_traded, y = y_traded, name = 'Traded', marker_color = 'green'),
+                ]
+            layout = {
+                'title': 'Book de Ofertas',
+                'separators': '.',
+                'barmode': 'stack',
+                'xaxis': dict(tickformat = '.2f', nticks = 10),
+                'yaxis': dict(gridcolor = 'grey', range = [0, 5000]),
+                'margin': dict(l = 40, r = 40, b = 40, t = 60, pad = 20),
+                'plot_bgcolor': 'rgb(255, 255, 255)',
+                'bargap': 0.1
+                }
+            fig = go.Figure(data = traces, layout = layout)
+            fig.write_image('images/fig' + str(t) + '.png', width = 1920, height = 1080)
+            print(t)
+                 # fig.show()
         
         # print('Time', t)
         # print('Total Volume Bid', sum(y_bid))
